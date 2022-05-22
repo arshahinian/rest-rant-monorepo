@@ -155,3 +155,71 @@ router.post('/', async (req, res) => {
 SELECT * FROM users;
 
 ~~~
+
+## 3) Creating an authentication controller
+
+* Now that our users have secure passwords, we can handle the submission of our log-in form and check if the provided password matches what we saved when a user signed up.
+* To keep our log-in logic separate from our users or places logic, let's create a new controller, an authentication controller, to handle log in:
+
+~~~
+
+const router = require('express').Router()
+const db = require("../models")
+const bcrypt = require('bcrypt')
+
+const { User } = db
+
+router.post('/', async (req, res) => {
+    console.log('IN HERE')
+})
+
+module.exports = router
+
+~~~
+
+* Of course, this route handler isn't doing anything at the moment.
+* We'll come back and add logic to it later, after we've tested that we can actually invoke this route handler from our log-in form.
+* Note that we're going to require the User model.
+* We aren't really using it at this point, but we know that in order to log a user in, we'll need to query them from the database.
+* We'll go ahead and require the model now so that we don't have to worry about it later.
+* Before we move to the front end, make sure you connect the authentication controller to our Express API in the index file:
+
+~~~
+  
+app.use('/places', require('./controllers/places'))
+app.use('/users', require('./controllers/users'))
+app.use('/authentication', require('./controllers/authentication'))
+
+// Listen for Connections
+app.listen(process.env.PORT, () => {
+
+~~~
+
+## 4) Fetching for login
+
+* Now that we have a route handler defined on our back end, let's write the fetch request that will trigger that route handler when our log-in form is submitted. 
+* Open src/users/LoginForm.js and add the following logic to the 'handleSubmit' function:
+
+~~~
+  
+async function handleSubmit(e) {
+    e.preventDefault()
+    const response = await fetch(`http://localhost:5000/authentication/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+    })
+
+    const data = await response.json()
+
+    console.log(data)
+}
+  
+~~~~
+
+* Here we're using the appropriate HTTP method and path to invoke the route handler we just created, and we're sending the username and password the user entered, so that our back end can use it to lookup.
+* We're moving quickly through this step, but the logic of the fetch request should be familiar from courses 5 and 7.
+* If you have questions about how you would know to write this fetch request on your own, please refer to the lessons on fetch in course 5.
+* At this point, you should be able to submit the log-in form, and "IN HERE" should be printed in your back-end terminal.
