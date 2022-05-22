@@ -223,3 +223,178 @@ async function handleSubmit(e) {
 * We're moving quickly through this step, but the logic of the fetch request should be familiar from courses 5 and 7.
 * If you have questions about how you would know to write this fetch request on your own, please refer to the lessons on fetch in course 5.
 * At this point, you should be able to submit the log-in form, and "IN HERE" should be printed in your back-end terminal.
+
+## 5) Finding a user by email
+* Now that we can handle the submission of the log-in form on our back end, let's use the credentials that the user provided and compare it to the data in our database:
+
+~~~
+
+router.post('/', async (req, res) => {
+
+    let user = await User.findOne({
+        where: { email: req.body.email }
+    })
+
+    console.log(user)
+})
+
+~~~
+
+* Here we are using the User model we required earlier to find a user with the email that the user entered in the form.
+* At this point you should be able to submit the log-in form, and if you provided a valid email, see the associated user record logged in your back-end terminal.
+
+## 6) Checking the user's password using bcrypt
+
+* Now that we have a user object, we can compare the password we collected from the front end with the passwordDigest we have stored in our back end:
+
+~~~
+
+  
+router.post('/', async (req, res) => {
+    
+    let user = await User.findOne({
+        where: { email: req.body.email }
+    })
+
+    if (!user || !await bcrypt.compare(req.body.password, user.passwordDigest)) {
+        res.status(404).json({ 
+            message: `Could not find a user with the provided username and password` 
+        })
+    } else {
+        res.json({ user })
+    }
+})
+
+~~~
+
+* Let's slow down here for a moment and think about what's happening at each step in our authentication process using an example.
+* Let's say we have a user named Amna Abdall, who signs up for REST-Rant with the email amna@example.com and the password felinepancake.
+* When she submits the sign-up form, our users controller will use bcrypt to turn her password, felinepancake, into a hash that looks something like this:
+* * $2b$10$Nia//YBrmKdDMZROFnABGO28QOC.2YADbKYQOvMSdqMmDD0tl.uUu.
+
+We would end up storing a record in our database that looks something like this:
+~~
+
+{
+    "firstName": "Amna",
+    "lastName": "Abdall",
+    "email": "amna@example.com",
+    "passwordDigest": "$2b$10$Nia//YBrmKdDMZROFnABGO28QOC.2YADbKYQOvMSdqMmDD0tl.uUu"
+}
+
+~~~
+
+* Later, when Amna tries to log in, she'll enter "amna@example.com" as her email and "felinepancake" as her password.
+* These will get sent to the new route handler in our authentication controller, which will use the provided email to find our record of Amna:
+
+~~~
+
+router.post('/', async (req, res) => {
+    
+    let user = await User.findOne({
+        where: { 
+            email: req.body.email (amna@example.com)         
+        }
+    })
+
+    if (!user || !await bcrypt.compare(req.body.password, user.passwordDigest)) {
+        res.status(404).json({ 
+            message: `Could not find a user with the provided username and password` 
+        })
+    } else {
+        res.json({ user })
+    }
+})
+
+~~~
+
+* Then it will use bcrypt to compare the password and password digest:
+
+~~~
+
+router.post('/', async (req, res) => {
+    
+    let user = await User.findOne({
+        where: { 
+            email: req.body.email (amna@example.com)             
+        }
+    })
+
+    if (!user (false) || !await bcrypt.compare(req.body.password (fe$2b$10$Nia//Y...) , user.passwordDigest)) {
+        res.status(404).json({ 
+            message: `Could not find a user with the provided username and password` 
+        })
+    } else {
+        res.json({ user })
+    }
+})
+
+~~~
+
+* Because the password matches what was originally hashed, our controller will skip to the else block and respond to the request to log in with the logged-in user:
+
+~~~
+
+router.post('/', async (req, res) => {
+    
+    let user = await User.findOne({
+        where: { 
+            email: req.body.email (amna@example.com)             
+        }
+    })
+
+    if (!user (false) || !await bcrypt.compare(req.body.password (fe$2b$10$Nia//Y...) , user.passwordDigest)) {
+        res.status(404).json({ 
+            message: `Could not find a user with the provided username and password` 
+        })
+    } else {
+        res.json({ user }) <-- HERE IS WHERE IT WOULD HAPPEN!!!
+    }
+})
+
+~~~
+
+## 7) Handling log in in the front end
+
+* We wrote our fetch request to log-in in the front end.
+* We will need to handle our API's response regardless of whether the user succeeded or failed at logging in.
+* If the request succeeded (has a status code of 200), then we can save the user to which our controller method responded in our front-end CurrentUser context, then redirect the user to the Home Page.
+* If the request failed, we'll want to display the error message the server sent us.
+
+~~~
+  
+async function handleSubmit(e) {
+    const response = await fetch(`http://localhost:5000/authentication/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+    })
+
+    const data = await response.json()
+
+    if (response.status === 200) {
+        setCurrentUser(data.user)
+        history.push(`/`)
+    } else {
+        setErrorMessage(data.message)
+    }
+}
+
+~~~
+
+* At this point, you should be able to submit the log-in form with incorrect credentials and see an informative error message.
+* If the request is submitted with the correct credentials, you should see the name of the user you logged in appear in the top right of the navigation bar.
+
+## Reflection
+* Wow!
+* In this lesson you managed to work across the database, the Express API, and the React app to build a secure authentication process.
+
+* There is, however, a bit of a problem still.
+* * What happens when you refresh the page?
+* * * I get logged out.
+
+* Right now, we've provided a way for the user to prove that they are who they say they are, but our API forgets who is logged in immediately after it is finished handling the log-in request, and so our React app forgets who is logged in immediately after the page is refreshed.
+
+* Remembering who is logged in after authenticating their username and password is a whole other challenge, and one we will spend the next few lessons exploring in depth.
