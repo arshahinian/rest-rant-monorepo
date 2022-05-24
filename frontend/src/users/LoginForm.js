@@ -29,6 +29,7 @@ function LoginForm() {
 
         if (response.status === 200) {
             setCurrentUser(data.user)
+            localStorage.setItem('token', data.token) /* Code being changed from console.log */
             history.push(`/`)
         } else {
             setErrorMessage(data.message)
