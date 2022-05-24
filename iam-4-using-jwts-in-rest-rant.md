@@ -203,8 +203,80 @@ Now that our API is sending a JWT when a user logs in, let's see if we can conso
 ~~~
 
 ## 5) Include the JWT in fetch requests
-Let's open src/contexts/CurrentUser.js and review the fetch request that is meant to retrieve the logged-in user on page load.
+* Let's open src/contexts/CurrentUser.js and review the fetch request that is meant to retrieve the logged-in user on page load.
+* When we were implementing session authentication, we needed to pass credentials: 'include' to fetch so that the browser would attach a cookie to the request.
+* * Then our back end could use the cookie to find the user who was logged in.
+* This time, we'll manually attach the JWT to our fetch request, and our back end will look at that to find the user who is logged in.
+* * Which part of an HTTP request seems most appropriate to contain the JWT?
+* * * The headers
 
-When we were implementing session authentication, we needed to pass credentials: 'include' to fetch so that the browser would attach a cookie to the request. Then our back end could use the cookie to find the user who was logged in.
+* So let's add an Authorization header:
 
-This time, we'll manually attach the JWT to our fetch request, and our back end will look at that to find the user who is logged in.
+~~~
+
+function CurrentUserProvider({ children }) {
+
+    const [currentUser, setCurrentUser] = useState(null)
+    useEffect(() => {
+
+        const getLoggedInUser = async () => {
+            let response = await fetch('http://localhost:5000/authentication/profile', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            let user = await response.json()
+            setCurrentUser(user)
+        }
+        getLoggedInUser()
+    }, [])
+
+~~~
+
+* Note that we've prepended the word "Bearer" to the JWT here.
+* This is not really required for the authentication to work, but it is conventional when sending authorization tokens to an API.
+
+## 6) Retrieve a user object based on the contents of the JWT
+* Now, in our authentication controller, we just need to extract the JWT from the request headers and decode it to get the ID of the logged-in user:
+
+~~~
+
+router.get('/profile', async (req, res) => {
+    try {
+        // Split the authorization header into [ "Bearer", "TOKEN" ]:
+        const [authenticationMethod, token] = req.headers.authorization.split(' ')
+
+        // Only handle "Bearer" authorization for now 
+        //  (we could add other authorization strategies later):
+        if (authenticationMethod == 'Bearer') {
+
+            // Decode the JWT
+            const result = await jwt.decode(process.env.JWT_SECRET, token)
+
+            // Get the logged in user's id from the payload
+            const { id } = result.value
+
+            // Find the user object using their id:
+            let user = await User.findOne({
+                where: {
+                    userId: id
+                }
+            })
+            res.json(user)
+        }
+    } catch {
+        res.json(null)
+    }
+})
+
+~~~
+
+* At this point, you should be able to refresh the page in your browser and remain logged in.
+* Your name should be visible in the top-right corner of the navigation.
+
+## Reflect
+* So far, we've practiced two ways of implementing authentication for a React front end and Express API.
+* In the lessons to follow, we will move our focus to authorization.
+* When we're done, users will only be able to delete their own comments, and only specific users will be able to add or edit places.
+* As we continue to build out REST-Rant, you may use either the session-authentication or jwt-authentication branches as you see fit.
+* Now that we have a way of authenticating the logged-in user, the authorization logic we write can be written identically, whether we are using a session or a JWT.
