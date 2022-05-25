@@ -22,10 +22,6 @@ function NewCommentForm({ place, onSubmit }) {
         fetchData()
     }, [])
 
-    let authorOptions = authors.map(author => {
-        return <option key={author.userId} value={author.userId}>{author.firstName} {author.lastName}</option>
-    })
-
     function handleSubmit(e) {
         e.preventDefault()
         onSubmit(comment)
@@ -52,13 +48,7 @@ function NewCommentForm({ place, onSubmit }) {
                     />
                 </div>
             </div>
-            <div className="row">
-                <div className="form-group col-sm-4">
-                    <label htmlFor="state">Author</label>
-                    <select className="form-control" value={comment.authorId} onChange={e => setComment({ ...comment, authorId: e.target.value })}>
-                        {authorOptions}
-                    </select>
-                </div>
+            <div className="row">                
                 <div className="form-group col-sm-4">
                     <label htmlFor="stars">Star Rating</label>
                     <input
