@@ -162,3 +162,106 @@ async function createComment(commentAttributes) {
 * This is awesome! We're using the authentication we built in the prior lessons to make our application more convenient and secure to use.
 * However, this did add quite a bit of bloat to our our route handler for creating a comment, and if we had to copy that bloat to every route handler that needs to access the logged-in user, it would result in some pretty unwieldy code.
 * So let's pause for a moment and refactor that code into one place using some middleware.
+
+## 4) Use Express middleware to look up the logged-in user\
+* Inside the back-end directory, create a middleware directory.
+* This directory can contain any custom middleware that we want our back end to run before any of our route handlers.
+* Inside the middleware directory, create a file named defineCurrentUser.js and give it the following content:
+
+~~~
+
+const db = require("../models")
+
+const { User } = db;
+
+async function defineCurrentUser(req, res, next) {
+    try {
+        let user = await User.findOne({
+            where: {
+                userId: req.session.userId
+            }
+        })
+        req.currentUser = user
+        next()
+    } catch {
+        next()
+    }
+}
+
+module.exports = defineCurrentUser
+
+~~~
+
+* This is running the same exact logic that we used in our comment creation route handler and our profile route handler from a prior lesson.
+* The only difference is that once we find the logged-in user (or determine that we don't have one), the middleware attaches the current user to the request object, making it accessible in all of our route handlers.
+
+* For our middleware to work, we'll need to configure it in our API's index file:
+
+~~~
+
+// Modules and Globals
+require('dotenv').config()
+const express = require('express')
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const app = express();
+const defineCurrentUser = require('./middleware/defineCurrentUser') /* NEW CODE LINE */
+/*...*/
+app.use(express.static('public'))
+app.use(express.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+app.use(defineCurrentUser) /* NEW CODE LINE */
+/*...*/
+
+~~~
+
+* Now we can go back and use req.currentUser in place of the complex token parsing process in the places and authentication controllers:
+
+~~~
+
+router.post('/:placeId/comments', async (req, res) => {
+    const placeId = Number(req.params.placeId)
+
+    req.body.rant = req.body.rant ? true : false
+
+    const place = await Place.findOne({
+        where: { placeId: placeId }
+    })
+
+    if (!place) {
+        return res.status(404).json({ message: `Could not find place with id "${placeId}"` })
+    }
+
+    if (!req.currentUser) {
+        return res.status(404).json({ message: `You must be logged in to leave a rand or rave.` })
+    }
+
+    const comment = await Comment.create({
+        ...req.body,
+        authorId: req.currentUser.userId,
+        placeId: placeId
+    })
+
+    res.send({
+        ...comment.toJSON(),
+        author: req.currentUser
+    })
+})
+
+~~~
+* * * controllers/authentication.js
+~~~
+  
+router.get('/profile', async (req, res) => {
+    res.json(req.currentUser)
+})
+
+~~~
+
+* At this point, you should still be able to:
+* Go to the details page for a place.
+* Create a new comment for that place.
+* See that you are automatically listed as the author of the comment.
+* Only now we've reduced the size of our route handlers significantly.
+
+## 5) Hide the NewCommentForm when a user isn't logged in
