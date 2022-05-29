@@ -265,3 +265,40 @@ router.get('/profile', async (req, res) => {
 * Only now we've reduced the size of our route handlers significantly.
 
 ## 5) Hide the NewCommentForm when a user isn't logged in
+* Let's test something.
+* Open the Chrome DevTools, click on the "Application" tab, and then select "Local Storage" in the left hand navigation menu.
+* You should see your JWT or cookies in the table that appears. Select and delete it; this will effectively log you out of REST-Rant.
+* Now go to the details page for a place and fill out a form for a new comment.
+* Users should only be able to leave comments if they are logged in.
+* Our back end is already enforcing this, which keeps our application secure, but our front end displays the NewCommentForm whether a user can actually submit it or not.
+* Let's add a check in our front-end code to hide the form when a user isn't logged in:
+* src/places/NewComment/Form.js
+~~~ 
+
+function handleSubmit(e) {
+    e.preventDefault()
+    onSubmit(comment)
+    setComment({
+        content: '',
+        stars: 3,
+        rant: false,
+        authorId: authors[0]?.userId
+    })
+}
+
+const { currentUser } = useContext(CurrentUser)
+
+if(!currentUser){
+    return <p>You must be logged in to leave a rant or rave.</p>
+}
+
+return (
+    <form onSubmit={handleSubmit}>
+        <div className="row">
+
+~~~
+
+* At this point, you should be able to see "You must be logged in to leave a rant or rave" on the place details page.
+* You can then submit the log-in form, return to the place details page, and see the form for leaving comments.
+
+## 6) Check the logged-in user when deleting comments

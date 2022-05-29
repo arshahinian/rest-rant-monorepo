@@ -13,8 +13,13 @@ function CurrentUserProvider({ children }){
             let response = await fetch('http://localhost:5000/authentication/profile', {
                 credentials: 'include'
             })
-            let user = await response.json()
-            setCurrentUser(user)
+            if(response != undefined)
+            {
+                console.log("response")
+                console.log(response)
+                let user = await response.json()
+                setCurrentUser(user)
+            }
         }
         getLoggedInUser()
     }, [])

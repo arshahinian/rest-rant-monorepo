@@ -26,7 +26,13 @@ router.post('/', async (req, res) => {
 })
 
 router.get('/profile', async (req, res) => {
-    res.json(req.currentUser)
+    console.log("backend - controller - authentication - get - profile")
+    let reqCurrentUser = req.currentUser;
+    if(reqCurrentUser != undefined)
+    {
+        console.log(reqCurrentUser)
+        res.json(reqCurrentUser)
+    }    
 })
 
 module.exports = router
