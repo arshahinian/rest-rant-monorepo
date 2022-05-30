@@ -357,5 +357,35 @@ const response = await fetch(`http://localhost:5000/places/${place.placeId}/comm
 ~~~
 
 ## 7) Hide the delete button when it won't work
+* Of course, we would rather users only be able to click Delete on comments they left in the first place.
+* Let's add some logic to our React app to only show the Delete button when a user is actually authorized to delete the comment:
+* src/places/CommentCard.js
+
+~~~
+
+function CommentCard({ comment, onDelete }) {
+    const { currentUser } = useContext(CurrentUser)
+
+    let deleteButton = null;
+
+    if (currentUser?.userId === comment.authorId) {
+        deleteButton = (
+            <button className="btn btn-danger" onClick={onDelete} >
+                Delete Comment
+            </button>
+        )
+    }
+    return (
+        <div className="border col-sm-4">
+            <h2 className="rant">{comment.rant ? 'Rant! ðŸ˜¡' : 'Rave! ðŸ˜»'}</h2>
+                <strong>- {comment.author.firstName} {comment.author.lastName}</strong>
+            </h3>
+            <h4>Rating: {comment.stars}</h4>
+            {deleteButton}
+        </div>
+    )
+}
+
+~~~
 
   
