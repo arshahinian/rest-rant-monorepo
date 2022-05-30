@@ -11,6 +11,8 @@ function PlaceDetails() {
 
 	const [place, setPlace] = useState(null)
 
+	const [errorMessage, setErrorMessage] = useState(null)
+
 	useEffect(() => {
 		const fetchData = async () => {
 			const response = await fetch(`http://localhost:5000/places/${placeId}`)
@@ -30,21 +32,29 @@ function PlaceDetails() {
 
 	async function deletePlace() {
 		await fetch(`http://localhost:5000/places/${place.placeId}`, {
-			method: 'DELETE'
+			method: 'DELETE',
+			credentials: 'include'
 		})
 		history.push('/places')
 	}
 
 	async function deleteComment(deletedComment) {
-		await fetch(`http://localhost:5000/places/${place.placeId}/comments/${deletedComment.commentId}`, {
-			method: 'DELETE'
+		const response = await fetch(`http://localhost:5000/places/${place.placeId}/comments/${deletedComment.commentId}`, {
+			method: 'DELETE',
+			credentials: 'include'
 		})
+
+		if (response.status === 200) {
+            setPlace({
+				...place,
+				comments: place.comments
+					.filter(comment => comment.commentId !== deletedComment.commentId)
+			})
+        } else {
+			const data = await response.json()
+            setErrorMessage(data.message)
+        }	
 		
-		setPlace({
-			...place,
-			comments: place.comments
-				.filter(comment => comment.commentId !== deletedComment.commentId)
-		})
 	}
 
 	
@@ -108,6 +118,14 @@ function PlaceDetails() {
 
 	return (
 		<main>
+			{errorMessage !== null
+                ? (
+                    <div className="alert alert-danger" role="alert">
+                        {errorMessage}
+                    </div>
+                )
+                : null
+            }
 			<div className="row">
 				<div className="col-sm-6">
 					<img style={{ maxWidth: 200 }} src={place.pic} alt={place.name} />

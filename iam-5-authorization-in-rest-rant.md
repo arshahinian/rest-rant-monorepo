@@ -302,3 +302,60 @@ return (
 * You can then submit the log-in form, return to the place details page, and see the form for leaving comments.
 
 ## 6) Check the logged-in user when deleting comments
+* Now that all of our comments are automatically associated with the correct user, we can ensure that no one ever deletes another user's comments.
+* Just like the process of attaching the logged-in user to a new comment, part of implementing this will occur in the controller, and part will happen in the React app.
+* In the controller, we will use req.currentUser to make sure that the comment being deleted was authored by the logged-in user.
+* By checking this in the controller, we ensure that even if someone were to send a hand-written HTTP request to our server, the proper authorization processes would be followed.
+* controllers/places.js
+
+~~~
+
+router.delete('/:placeId/comments/:commentId', async (req, res) => {
+    let placeId = Number(req.params.placeId)
+    let commentId = Number(req.params.commentId)
+
+    if (isNaN(placeId)) {
+        res.status(404).json({ message: `Invalid id "${placeId}"` })
+    } else if (isNaN(commentId)) {
+        res.status(404).json({ message: `Invalid id "${commentId}"` })
+    } else {
+        const comment = await Comment.findOne({
+            where: { commentId: commentId, placeId: placeId }
+        })
+        if (!comment) {
+            res.status(404).json({ 
+                message: `Could not find comment` 
+            })
+        } else if (comment.authorId !== req.currentUser?.userId) {
+            res.status(403).json({ 
+                message: `You do not have permission to delete comment "${comment.commentId}"` 
+            })
+        } else {
+            await comment.destroy()
+            res.json(comment)
+        }
+    }
+})
+
+~~~  
+
+* We're using a '?' in 'req.currentUser?.userId' so that the IF statement will run whether a user is currently logged in or not.
+* Once the controller has been updated, we'll need to include the JWT with the fetch request for deleting comments in the front end:
+* src/places/PlaceDetails.js
+
+~~~
+/* THIS IS WRONG AND IS MEANT TO BE THE DELETE REQUEST */
+const response = await fetch(`http://localhost:5000/places/${place.placeId}/comments`, {
+    method: 'POST',
+    'credentials': 'include',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(commentAttributes)
+})
+
+~~~
+
+## 7) Hide the delete button when it won't work
+
+  
