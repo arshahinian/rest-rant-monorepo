@@ -16,10 +16,17 @@ module.exports = (sequelize, DataTypes) => {
     type: DataTypes.SMALLINT,
     primaryKey: true,
     autoIncrement: true
-  },
+    },
     firstName: DataTypes.STRING,
     lastName: DataTypes.STRING,
     email: DataTypes.STRING,
+    role: {
+      type: DataTypes.ENUM,
+      values: [
+        'reviewer',
+        'admin',
+      ],
+    },
     passwordDigest: DataTypes.STRING
   },
   {
