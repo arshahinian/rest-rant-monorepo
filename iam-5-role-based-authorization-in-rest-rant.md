@@ -76,3 +76,91 @@ User.init({
 ~~~
 
 ## 3) Restrict user access for signing up as an admin
+* We don't want users to be able to sign up as admins, even by sending hand-written fetch requests.
+* In our users controller, let's establish that any new users are going to be reviewers:
+
+* controllers/users.js
+~~~
+
+const router = require('express').Router()
+const db = require("../models")
+const bcrypt = require('bcrypt')
+
+const { User } = db
+
+router.post('/', async (req, res) => {
+    let { password, ...rest } = req.body;
+    const user = await User.create({ 
+        ...rest, 
+        role: 'reviewer',
+        passwordDigest: await bcrypt.hash(password, 10)
+    })
+    res.json(user)
+})   
+
+~~~
+
+* Now, even if someone sends a request to this route handler with role: 'admin' in the request body, our API logic will overwrite it and make sure that the user is created with the proper role and permissions.
+
+4) Seed an admin
+* Since it is not possible to create an admin account using our API, we'll need to create one for ourselves to use with a seed file.
+* Run the following command in an open terminal in your back-end directory:
+* * npx sequelize-cli seed:generate --name add-admin
+* Then add the following contents to the seed file:
+
+~~~
+
+'use strict';
+const bcrypt = require('bcrypt')
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.bulkInsert('users', [{
+      first_name: 'YOUR FIRST NAME',
+      last_name: 'YOUR LAST NAME',
+      email: 'admin@example.com',
+      role: 'admin',
+      password_digest: await bcrypt.hash(process.env.ADMIN_PASSWORD, 10),
+      created_at: new Date(),
+      updated_at: new Date()
+    }])
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.bulkDelete('users', {
+      email: 'admin@example.com'
+    })
+  }
+}
+
+~~~
+
+* Here, we're referencing another .env variable for the administrator's password.
+* We use it so that if our codebase is ever made public, people reading our seed files won't be able to learn the password to sign into the admin account.
+
+* We'll need to add that variable to our .env file:
+
+* backend/.env
+
+~~~
+
+PORT=5000
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+DB_DATABASE=rest_rant_auth
+SESSION_SECRET=qiweuxhoiuehqmie
+JWT_SECRET=qiweuxhoiuehqmie
+ADMIN_PASSWORD=number_one_ranter
+
+~~~
+
+* Now run the seed file to insert the admin user into the users table:
+* * npx db: seed --name 20210729194945-add-admin.js. <-- THIS IS WRONG
+* * sequelize db:seed --seed 20220531193828-add-admin.js
+* At this point, you should be able to log in as the admin user.
+* If you are already logged into Rest Rant and haven't created a log-out button yet, you'll need to log yourself out manually.
+* For session authentication:
+* * Go to the "Application" tab in the chrome DevTools, click on "Cookies" in the left-hand navigation, and delete all of them. Refresh the page; you should be logged out now.
+* Once you're logged out, you should be able to log in using the email admin@example.com and the password number_one_ranter.
+
+## 5) Check the logged-in user's role when creating, editing, or deleting places
