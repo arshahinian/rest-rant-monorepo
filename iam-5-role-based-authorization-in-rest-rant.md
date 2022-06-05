@@ -164,3 +164,132 @@ ADMIN_PASSWORD=number_one_ranter
 * Once you're logged out, you should be able to log in using the email admin@example.com and the password number_one_ranter.
 
 ## 5) Check the logged-in user's role when creating, editing, or deleting places
+
+* Now that we can log in as an admin user, let's restrict some of the actions available to normal reviewers by adding the following if-checks to our route handlers in the places controller:
+
+* * * controllers/places.js
+
+~~~
+ 
+const { Place, Comment, User } = db
+
+router.post('/', async (req, res) => {
+    if(req.currentUser?.role !== 'admin'){
+        return res.status(403).json({ message: 'You are not allowed to add a place'})
+    }
+
+router.put('/:placeId', async (req, res) => {
+    if(req.currentUser?.role !== 'admin'){
+        return res.status(403).json({ message: 'You are not allowed to edit places'})
+    }
+
+router.delete('/:placeId', async (req, res) => {
+    if(req.currentUser?.role !== 'admin'){
+        return res.status(403).json({ message: 'You are not allowed to delete places'})
+    }
+ 
+~~~
+
+## 6) Hide admin buttons from non-admins
+
+* Just like the authorization we implemented in our last activity, adding if-checks in our controllers is important to protect the API and database from all unauthorized requests, including hand-written fetch requests.
+* However, it will leave broken buttons in our React app, making for a confusing user interface.
+* Let's only show the Add Place button in the navigation menu if the logged-in user is an admin:
+* * * src/Navigation.js
+~~~  
+
+if (currentUser) {
+    loginActions = (
+        <li style={{ float: 'right' }}>
+            Logged in as {currentUser.firstName} {currentUser.lastName}
+        </li>
+    )
+}
+
+let addPlaceButton = null
+
+if (currentUser?.role === 'admin') {
+    addPlaceButton = (
+        <li>
+            <a href="#" onClick={() => history.push("/places/new")}>
+                Add Place
+            </a>
+        </li>
+    )
+}
+
+return (
+    <nav>
+          
+            {addPlaceButton}
+            {loginActions}
+        </ul>
+    </nav>
+
+~~~
+
+* Next, let's only show the Edit and Delete buttons on the place details page if the logged-in user is an admin:
+* * * src/places/PlaceDetails.js
+~~~
+
+  
+    comments = place.comments.map(comment => {
+        return (
+            <CommentCard 
+                key={comment.commentId} 
+                comment={comment} 
+                onDelete={() => deleteComment(comment)} 
+            />
+        )
+    })
+}
+
+let placeActions = null
+
+if (currentUser?.role === 'admin') {
+    placeActions = (
+        <>
+            <a className="btn btn-warning" onClick={editPlace}>
+                Edit
+            </a>
+            <button type="submit" className="btn btn-danger" onClick={deletePlace}>
+                Delete
+            </button>
+        </>
+    )
+}
+
+return (
+    <main>
+        <div className="row">
+              
+                    Serving {place.cuisines}.
+                </h4>
+                <br />
+                {placeActions}
+            </div>
+        </div>
+
+~~~
+
+## Reflect
+* You've now built a secured application with Rest Rant!
+* A few pieces of advice to keep in mind as you take these lessons with you into your programming career:
+* Authentication and authorization are complex problems.
+* If you are tasked with implementing it single-handedly as a junior developer, find another place to work.
+* Good auth requires a team and experience to succeed.
+* When securing your own applications, think like the attacker.
+* There will always be new types of attacks to consider, so research common attack patterns often.
+* At the very least, be proactive in guarding against Cross-Site Request Forgery and Cross-Site Scripting.
+* Just because you can't break your application using your user interface, it doesn't mean your application is secure.
+* Attackers don't have to go through your front end, they can write any arbitrary HTTP request and send it to your API directly.
+* Make sure that any necessary authorization is handled at the controller level, not just in your React app or view layer.
+
+## Acceptance Criteria
+* When using admin credentials, expect to be able to successfully log in.
+* When logged in as an admin, you should be able to see Edit and Delete buttons.
+* When not logged in an as an admin, you should not be able to see Edit and Delete buttons.
+* Before submitting, make sure you do a self review of your code.
+* Check formatting and spelling, include comments in your code, and ensure you have a healthy commit history.
+
+* Make sure to submit your github repository link on the submission page.
