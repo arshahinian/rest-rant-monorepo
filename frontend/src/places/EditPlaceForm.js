@@ -29,6 +29,7 @@ function EditPlaceForm() {
 
 		await fetch(`http://localhost:5000/places/${place.placeId}`, {
 			method: 'PUT',
+			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json'
 			},

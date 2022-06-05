@@ -4,7 +4,8 @@ const db = require("../models")
 const { Place, Comment, User } = db
 
 router.post('/', async (req, res) => {
-    if(req.currentUser?.role !== 'admin'){
+    console.log(`req.currentUser?.role: ${req.currentUser?.role}`)
+    if(req.currentUser?.role !== 'admin'){        
         return res.status(403).json({ message: 'You are not allowed to add a place'})
     }
     if (!req.body.pic) {
@@ -16,6 +17,7 @@ router.post('/', async (req, res) => {
     if (!req.body.state) {
         req.body.state = 'USA'
     }
+    console.log("Creating Place")
     const place = await Place.create(req.body)
     res.json(place)
 })

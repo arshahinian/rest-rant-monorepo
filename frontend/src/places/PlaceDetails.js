@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useHistory, useParams } from "react-router"
 import CommentCard from './CommentCard'
 import NewCommentForm from "./NewCommentForm";
+import { CurrentUser } from "../contexts/CurrentUser"
 
 function PlaceDetails() {
+	const { currentUser } = useContext(CurrentUser)
 
 	const { placeId } = useParams()
 
@@ -116,17 +118,17 @@ function PlaceDetails() {
 	}
 
 	let placeActions = null
-
+	console.log(`currentUser?.role: ${currentUser?.role}`)
 	if (currentUser?.role === 'admin') {
 		placeActions = (
-			<>
+			<div className="col-sm-6">
 				<a className="btn btn-warning" onClick={editPlace}>
 					Edit
 				</a>
 				<button type="submit" className="btn btn-danger" onClick={deletePlace}>
 					Delete
 				</button>
-			</>
+			</div>
 		)
 	}
 
@@ -163,10 +165,9 @@ function PlaceDetails() {
 					</h3>
 					<h4>
 						Serving {place.cuisines}.
-					</h4>
-					<br />
-					{placeActions}
+					</h4>										
 				</div>
+				{placeActions}
 			</div>
 			<hr />
 			<h2>Comments</h2>
